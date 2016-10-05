@@ -10,6 +10,8 @@ const server = net.createServer((request) => {
 	//will kick user if writesInSecond is > 3
 	let writesInSecond = 0;
 
+
+
 	request.on('data', (data) => {
 		writesInSecond++;
 		const userInput = data.toString().substring(0,data.length-1);
@@ -44,8 +46,18 @@ const server = net.createServer((request) => {
 			});
 			if (isNew){
 				userName = userInput;
+				//notifies user that they have joined;
+				request.write('you have joined the chatroom')
+
+				//announces to the chatroom when someone joins the chat
+				presentUsers.forEach(user => {
+					user.write(`${userName} has joined the chatroom`);
+					
+				})
+				console.log(`${userName} has joined the chatroom`);
 				presentUsers.push(request);
 				namesInUse.push(userName);
+
 			} else {
 				request.write(`username is already taken. please choose another`);
 			}
