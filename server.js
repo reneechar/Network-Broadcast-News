@@ -96,8 +96,16 @@ const server = net.createServer((request) => {
 
 	//handles request ended
 	request.on('end',() => {
-		namesInUse.splice(namesInUse.indexOf(request.userName),1);
 		console.log(`${request.userName} has left chats`);
+
+		presentUsers.splice(presentUsers.indexOf(request),1);
+		presentUsers.forEach(user => {
+			if (user.chatroom === request.chatroom) {
+				user.write(`${request.userName} has left the chatroom`);
+			}
+		})
+		namesInUse.splice(namesInUse.indexOf(request.userName),1);
+
 
 		// let index = presentUsers.indexOf(request);
 		// presentUsers.splice(index,1);
