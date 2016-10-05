@@ -7,8 +7,11 @@ const server = net.createServer((request) => {
 	//handles data received
 
 	let userName;
+	//will kick user if writesInSecond is > 3
+	let writesInSecond = 0;
 
 	request.on('data', (data) => {
+		writesInSecond++;
 		const userInput = data.toString();
 		if (userName !== undefined) {
 			//they already registered
@@ -31,7 +34,20 @@ const server = net.createServer((request) => {
 				request.write(`username is already taken. please choose another`);
 			}
 		}
+		//kicks user if they surpass the writes per second limit
+		if (writesInSecond > 3) {
+			request.write(`you typed too fast and surpassed the 3 writes per second limit`);
+			request.end();
+		}
+
+
 	})
+
+	//reset the writesInSecond to 0 after 1 second
+	setInterval(()=> {
+		writesInSecond = 0;
+	},1000);
+
 
 	request.write('Type your user name'); //preparing the envelope
 	// request.end(); //send the envelope
@@ -74,7 +90,7 @@ const server = net.createServer((request) => {
 		userName = undefined;
 	})
 
-	//handles 
+	
 
 
 })
