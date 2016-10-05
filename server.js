@@ -1,7 +1,7 @@
 const net = require('net');
 
 let presentUsers = [];
-let namesInUse = ['ADMIN\n'];
+let namesInUse = ['ADMIN'];
 
 const server = net.createServer((request) => {
 	//handles data received
@@ -12,16 +12,32 @@ const server = net.createServer((request) => {
 
 	request.on('data', (data) => {
 		writesInSecond++;
-		const userInput = data.toString();
+		const userInput = data.toString().substring(0,data.length-1);
+		//client has succesfully selected a username and has typed a command or message
 		if (userName !== undefined) {
-			//they already registered
-			presentUsers.forEach(user => {
-				if (request !== user) {
-					user.write(`${userName.substring(0,userName.length-1)}: ${userInput.substring(0,userInput.length-1)}`);
-				}
-			})
-			console.log(`${userName.substring(0,userName.length-1)}: ${userInput.substring(0,userInput.length-1)}`);
+			//private message a user if /pm precedes their message
+			if(userInput.substring(0,3) === '/pm') {
+				let userInputArr = userInput.split(' ');
+				let intendedViewer = userInputArr[1];
+				let privateMessage = userInputArr.slice(2,userInputArr.length).join(' ');
 
+				if (namesInUse.indexOf(intendedViewer) > -1) {
+					let index = namesInUse.indexOf(intendedViewer);
+					presentUsers[index-1].write(`${userName} has sent you a private message \n* ${privateMessage} *`);
+				} else {
+					request.write(`${intendedViewer} is not in the chatroom`);
+				}
+			} else {
+				//send message to all users in chatroom
+				presentUsers.forEach(user => {
+					if (request !== user) {
+						user.write(`${userName}: ${userInput}`);
+					}
+				})
+				console.log(`${userName}: ${userInput}`);
+			}
+
+		//client must set their username
 		} else {
 			let isNew = namesInUse.every(name => {
 				return userInput !== name;
@@ -34,6 +50,7 @@ const server = net.createServer((request) => {
 				request.write(`username is already taken. please choose another`);
 			}
 		}
+
 		//kicks user if they surpass the writes per second limit
 		if (writesInSecond > 3) {
 			request.write(`you typed too fast and surpassed the 3 writes per second limit`);
@@ -60,12 +77,10 @@ const server = net.createServer((request) => {
 	  if (chunk !== null) {
 	  	if (chunk.toString().substring(0,5) ==='/kick') {
 	  		//kick out user
-	  		let index = namesInUse.indexOf(chunk.toString().substring(6));
+	  		let index = namesInUse.indexOf(chunk.toString().substring(6,chunk.length-1));
 	  		if (index > -1) {
 	  			presentUsers[index-1].write('you have been kicked by the ADMIN');
 	  			presentUsers[index-1].end();
-	  			// presentUsers.splice(index-1,1);
-	  			// namesInUse.splice(index,1);
 	  		} else {
 	  			console.log('that user does not exist');
 	  		}
@@ -82,10 +97,10 @@ const server = net.createServer((request) => {
 		let index = presentUsers.indexOf(request);
 		presentUsers.splice(index,1);
 		presentUsers.forEach(user => {
-			user.write(`${namesInUse[index+1].substring(0,namesInUse[index+1].length-1)} has left the chatroom`);
+			user.write(`${namesInUse[index+1]} has left the chatroom`);
 
 		})
-		console.log(`${namesInUse[index+1].substring(0,namesInUse[index+1].length-1)} has left the chatroom`);
+		console.log(`${namesInUse[index+1]} has left the chatroom`);
 		namesInUse.splice(index+1,1);
 		userName = undefined;
 	})
