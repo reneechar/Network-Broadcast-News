@@ -1,63 +1,45 @@
 const net = require('net');
 
+//data structures for a single chatroom hosted by the ADMIN/server
 let presentUsers = [];
 let namesInUse = ['ADMIN'];
 
 const server = net.createServer((request) => {
 	//handles data received
 
-	let userName;
+	//holds all users on server
+	presentUsers.push(request);
+
+	request.userName;
 	//will kick user if writesInSecond is > 3
 	let writesInSecond = 0;
 
-
+	//creates property 'chatroom' on each request with value-chatname
+	//sets current chatroom to main
+	request.chatroom = 'main';
 
 	request.on('data', (data) => {
 		writesInSecond++;
 		const userInput = data.toString().substring(0,data.length-1);
-		//client has succesfully selected a username and has typed a command or message
-		if (userName !== undefined) {
-			//private message a user if /pm precedes their message
-			if(userInput.substring(0,3) === '/pm') {
-				let userInputArr = userInput.split(' ');
-				let intendedViewer = userInputArr[1];
-				let privateMessage = userInputArr.slice(2,userInputArr.length).join(' ');
 
-				if (namesInUse.indexOf(intendedViewer) > -1) {
-					let index = namesInUse.indexOf(intendedViewer);
-					presentUsers[index-1].write(`*${userName}: ${privateMessage} *`);
-				} else {
-					request.write(`${intendedViewer} is not in the chatroom`);
-				}
+		if (request.userName !== undefined) {
+			//splits userInput into an array
+			const userInputArr = userInput.split(' ');
+			if(userInputArr[0] === '/switch') {
+				//switch the user's chatroom to the string following \chat command
+				request.chatroom = userInputArr.slice(1,userInputArr.length).join(' ');
+			//user should already have joined a chatroom at this point and be typing messages to entire chatroom
 			} else {
-				//send message to all users in chatroom
-				presentUsers.forEach(user => {
-					if (request !== user) {
-						user.write(`${userName}: ${userInput}`);
-					}
-				})
-				console.log(`${userName}: ${userInput}`);
+				sendMessage(userInput,request);
 			}
-
 		//client must set their username
 		} else {
 			let isNew = namesInUse.every(name => {
 				return userInput !== name;
 			});
 			if (isNew){
-				userName = userInput;
-				//notifies user that they have joined;
-				request.write('you have joined the chatroom')
-
-				//announces to the chatroom when someone joins the chat
-				presentUsers.forEach(user => {
-					user.write(`${userName} has joined the chatroom`);
-					
-				})
-				console.log(`${userName} has joined the chatroom`);
-				presentUsers.push(request);
-				namesInUse.push(userName);
-
+				request.userName = userInput;
+				namesInUse.push(request.userName);
 			} else {
 				request.write(`username is already taken. please choose another`);
 			}
@@ -69,6 +51,15 @@ const server = net.createServer((request) => {
 			request.end();
 		}
 
+		function sendMessage(message, sender) {
+			presentUsers.forEach(user => {
+				if (user.chatroom === sender.chatroom && user !== sender) {
+					user.write(`${sender.userName}: ${message}`);
+				}
+			});
+			console.log(`*${sender.chatroom}* ${sender.userName}: ${message}`);
+		}
+
 
 	})
 
@@ -78,8 +69,7 @@ const server = net.createServer((request) => {
 	},1000);
 
 
-	request.write('Type your user name'); //preparing the envelope
-	// request.end(); //send the envelope
+	request.write('Type your user name');
 
 
 
@@ -106,15 +96,18 @@ const server = net.createServer((request) => {
 
 	//handles request ended
 	request.on('end',() => {
-		let index = presentUsers.indexOf(request);
-		presentUsers.splice(index,1);
-		presentUsers.forEach(user => {
-			user.write(`${namesInUse[index+1]} has left the chatroom`);
+		namesInUse.splice(namesInUse.indexOf(request.userName),1);
+		console.log(`${request.userName} has left chats`);
 
-		})
-		console.log(`${namesInUse[index+1]} has left the chatroom`);
-		namesInUse.splice(index+1,1);
-		userName = undefined;
+		// let index = presentUsers.indexOf(request);
+		// presentUsers.splice(index,1);
+		// presentUsers.forEach(user => {
+		// 	user.write(`${namesInUse[index+1]} has left the chatroom`);
+
+		// })
+		// console.log(`${namesInUse[index+1]} has left the chatroom`);
+		// namesInUse.splice(index+1,1);
+		// userName = undefined;
 	})
 
 	
