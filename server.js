@@ -23,7 +23,7 @@ const server = net.createServer((request) => {
 
 				if (namesInUse.indexOf(intendedViewer) > -1) {
 					let index = namesInUse.indexOf(intendedViewer);
-					presentUsers[index-1].write(`${userName} has sent you a private message \n* ${privateMessage} *`);
+					presentUsers[index-1].write(`*${userName}: ${privateMessage} *`);
 				} else {
 					request.write(`${intendedViewer} is not in the chatroom`);
 				}
